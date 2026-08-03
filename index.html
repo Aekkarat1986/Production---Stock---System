@@ -320,10 +320,45 @@
       };
       google.script.run.withSuccessHandler(alertRes).saveDeliveryData(data);
     }
-
-    function alertRes(res) {
+function alertRes(res) {
       alert(res);
     }
+
+    // ฟังก์ชันดึงยอดค้างชุบ
+    function loadPlatingBalance() {
+      google.script.run.withSuccessHandler(renderPlatingBalance).getPlatingBalance();
+    }
+
+    function renderPlatingBalance(data) {
+      var tbody = document.getElementById("platingBalanceTableBody");
+      tbody.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-muted">ไม่มีรายการชิ้นส่วนค้างอยู่ที่โรงชุบ</td></tr>`;
+        return;
+      }
+
+      data.forEach(function(item) {
+        var tr = document.createElement("tr");
+        var badgeClass = item.balance > 0 ? "text-danger font-weight-bold" : "text-success";
+        
+        tr.innerHTML = `
+          <td><b>${item.rmId}</b></td>
+          <td>${item.vendor}</td>
+          <td>${item.sent.toLocaleString()}</td>
+          <td>${item.received.toLocaleString()}</td>
+          <td class="${badgeClass}">${item.balance.toLocaleString()} ชิ้น</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // โหลดข้อมูลอัตโนมัติเมื่อกดคลิกแท็บส่งชุบ
+    $(document).ready(function(){
+      $('#tab-plating').on('click', function(){
+        loadPlatingBalance();
+      });
+    });
   </script>
 </body>
 </html>
