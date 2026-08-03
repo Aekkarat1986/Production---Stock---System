@@ -4,185 +4,207 @@ HTML
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบรายงานการผลิตและควบคุม Stock</title>
+    <title>ระบบควบคุมการผลิต & สถานะสต็อกสินค้า</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f6f9; font-family: 'Sarabun', sans-serif; }
-        .card-stat { border: none; border-radius: 12px; transition: transform 0.2s; }
-        .card-stat:hover { transform: translateY(-3px); }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card-custom { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .badge-status { font-size: 0.8rem; padding: 6px 10px; border-radius: 20px; }
     </style>
 </head>
 <body class="p-3 p-md-4">
-    <div class="container-fluid max-width-lg">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="container-fluid">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm">
             <div>
-                <h3 class="fw-bold text-primary mb-1"><i class="fa-solid fa-industry me-2"></i>ระบบรายงานการผลิตและควบคุม Stock</h3>
-                <p class="text-muted mb-0">บริหารจัดการงานชุบ, ชิ้นส่วนประกอบ, QC, Productivity และ Stock FG</p>
+                <h4 class="fw-bold text-primary mb-1"><i class="fa-solid fa-industry me-2"></i>ระบบติดตามสถานะการผลิต & BOM Stock</h4>
+                <small class="text-muted">ติดตามสถานะ: ส่งชุบ ➔ รับเข้า ➔ ประกอบ/QC (ตัด BOM) ➔ คลัง FG ➔ QA & Delivery</small>
             </div>
-            <button onclick="fetchData()" class="btn btn-outline-primary"><i class="fa-solid fa-rotate me-1"></i> อัปเดตข้อมูล</button>
+            <button onclick="fetchData()" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-sync me-1"></i>อัปเดตข้อมูล</button>
         </div>
 
         <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card card-stat bg-primary text-white p-3">
+            <div class="col-md-6">
+                <div class="card card-custom bg-primary text-white p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-white-50 small">วัตถุดิบ/ชิ้นส่วน (RM)</div>
+                            <small class="opacity-75">รวมคลังชิ้นส่วน (Component Stock)</small>
                             <h2 class="fw-bold mb-0" id="statRm">0 ชิ้น</h2>
                         </div>
                         <i class="fa-solid fa-cubes fa-2x opacity-50"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card card-stat bg-warning text-dark p-3">
+            <div class="col-md-6">
+                <div class="card card-custom bg-success text-white p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="text-dark-50 small">งานค้างชุบ (Plating)</div>
-                            <h2 class="fw-bold mb-0" id="statPlating">0 ชิ้น</h2>
-                        </div>
-                        <i class="fa-solid fa-truck-ramp-box fa-2x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card card-stat bg-success text-white p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-white-50 small">สินค้าสำเร็จรูป (FG)</div>
+                            <small class="opacity-75">รวมคลังสินค้าสำเร็จรูป (FG Stock)</small>
                             <h2 class="fw-bold mb-0" id="statFg">0 ชิ้น</h2>
                         </div>
                         <i class="fa-solid fa-box-check fa-2x opacity-50"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card card-stat bg-danger text-white p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-white-50 small">Defect Rate (%)</div>
-                            <h2 class="fw-bold mb-0" id="statDefect">0 %</h2>
-                        </div>
-                        <i class="fa-solid fa-chart-pie fa-2x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <ul class="nav nav-tabs card-header-tabs" id="actionTab" role="tablist">
+        <div class="card card-custom mb-4">
+            <div class="card-header bg-white pt-3">
+                <ul class="nav nav-pills card-header-pills" id="processTab" role="tablist">
                     <li class="nav-item">
-                        <button class="nav-link active fw-bold" id="receive-tab" data-bs-toggle="tab" data-bs-target="#receive" type="button"><i class="fa-solid fa-download text-success me-1"></i>1. รับเข้าชิ้นส่วน / รับงานชุบ</button>
+                        <button class="nav-link active fw-bold" id="tab-plating" data-bs-toggle="tab" data-bs-target="#panel-plating" type="button"><i class="fa-solid fa-truck-arrow-right me-1"></i>1. บันทึกส่งชุบ</button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link fw-bold" id="send-tab" data-bs-toggle="tab" data-bs-target="#send" type="button"><i class="fa-solid fa-upload text-warning me-1"></i>2. ส่งชิ้นงานไปชุบ</button>
+                        <button class="nav-link fw-bold" id="tab-receive" data-bs-toggle="tab" data-bs-target="#panel-receive" type="button"><i class="fa-solid fa-file-invoice-dollar me-1"></i>2. รับเข้า Component</button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link fw-bold" id="assembly-tab" data-bs-toggle="tab" data-bs-target="#assembly" type="button"><i class="fa-solid fa-gears text-primary me-1"></i>3. ประกอบ, QC & ตัด Stock FG</button>
+                        <button class="nav-link fw-bold" id="tab-assembly" data-bs-toggle="tab" data-bs-target="#panel-assembly" type="button"><i class="fa-solid fa-gears me-1"></i>3. ประกอบ/QC (ตัด BOM)</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold" id="tab-delivery" data-bs-toggle="tab" data-bs-target="#panel-delivery" type="button"><i class="fa-solid fa-paper-plane me-1"></i>4. QA Final & Delivery</button>
                     </li>
                 </ul>
             </div>
             <div class="card-body">
-                <div class="tab-content" id="actionTabContent">
+                <div class="tab-content">
                     
-                    <div class="tab-pane fade show active" id="receive" role="tabpanel">
-                        <form id="receiveForm" onsubmit="handleReceive(event)">
+                    <div class="tab-pane fade show active" id="panel-plating">
+                        <form onsubmit="handleSendPlating(event)">
                             <div class="row g-3">
                                 <div class="col-md-3">
-                                    <label class="form-label">📅 วันที่รับเข้า</label>
-                                    <input type="date" id="receiveDate" class="form-control" required>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">⏰ เวลา</label>
-                                    <input type="time" id="receiveTime" class="form-control" required>
+                                    <label class="form-label">หมายเลขใบส่งชุบ</label>
+                                    <input type="text" id="pltDocNo" class="form-control" placeholder="เช่น PLT-2026-001" required>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label">ประเภทการรับเข้า</label>
-                                    <select id="receiveType" class="form-select" required>
-                                        <option value="รับซื้อชิ้นส่วนใหม่">รับซื้อชิ้นส่วนใหม่ (เข้า Stock RM)</option>
-                                        <option value="รับกลับจากโรงชุบ">รับกลับจากโรงชุบ (ชิ้นงานชุบ)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">รหัสชิ้นส่วน (RM ID)</label>
-                                    <input type="text" id="receiveRmId" class="form-control" placeholder="เช่น RM-001" required>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">จำนวนที่รับเข้า</label>
-                                    <input type="number" id="receiveQty" class="form-control" min="1" required>
-                                </div>
-                                <div class="col-md-12 text-end">
-                                    <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus me-1"></i>บันทึกรับเข้า Stock</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="tab-pane fade" id="send" role="tabpanel">
-                        <form id="platingForm" onsubmit="handlePlating(event)">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">📅 วันที่ส่งชุบ</label>
-                                    <input type="date" id="platingDate" class="form-control" required>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">⏰ เวลา</label>
-                                    <input type="time" id="platingTime" class="form-control" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">รหัสชิ้นส่วนที่ส่งชุบ (RM ID)</label>
-                                    <input type="text" id="platingId" class="form-control" placeholder="เช่น RM-001" required>
+                                    <label class="form-label">หมายเลขชิ้นงาน (Component)</label>
+                                    <select id="pltRmId" class="form-select rmSelect" required><option value="">-- เลือกชิ้นงาน --</option></select>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">จำนวนที่ส่งชุบ</label>
-                                    <input type="number" id="platingQty" class="form-control" min="1" required>
+                                    <input type="number" id="pltQty" class="form-control" min="1" required>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label">ชื่อโรงชุบ / ผู้รับงาน</label>
-                                    <input type="text" id="platingVendor" class="form-control" placeholder="เช่น โรงชุบเจริญการช่าง" required>
+                                    <label class="form-label">โรงชุบ / ผู้ผลิต</label>
+                                    <input type="text" id="pltVendor" class="form-control" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">ผู้บันทึก</label>
+                                    <input type="text" id="pltOperator" class="form-control" required>
                                 </div>
                                 <div class="col-12 text-end">
-                                    <button type="submit" class="btn btn-warning"><i class="fa-solid fa-paper-plane me-1"></i>บันทึกส่งชุบ (ตัด Stock RM)</button>
+                                    <button type="submit" class="btn btn-warning text-dark fw-bold"><i class="fa-solid fa-paper-plane me-1"></i>บันทึกส่งชุบ (ปรับสถานะ: อยู่ระหว่างชุบ)</button>
                                 </div>
                             </div>
                         </form>
                     </div>
 
-                    <div class="tab-pane fade" id="assembly" role="tabpanel">
-                        <form id="assemblyForm" onsubmit="handleAssembly(event)">
+                    <div class="tab-pane fade" id="panel-receive">
+                        <form onsubmit="handleReceive(event)">
                             <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">📅 วันที่ประกอบ</label>
-                                    <input type="date" id="assemblyDate" class="form-control" required>
+                                <div class="col-md-2">
+                                    <label class="form-label">Log No.</label>
+                                    <input type="text" id="rcvLogNo" class="form-control" placeholder="เช่น RC-001" required>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label">⏰ เวลา</label>
-                                    <input type="time" id="assemblyTime" class="form-control" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">รหัสสินค้าสำเร็จรูป (FG ID)</label>
-                                    <input type="text" id="fgId" class="form-control" placeholder="เช่น FG-101" required>
+                                    <label class="form-label">บิลเลขที่</label>
+                                    <input type="text" id="rcvBillNo" class="form-control" placeholder="เช่น INV-8899" required>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label">รหัสชิ้นส่วนที่ใช้ประกอบ (RM ID)</label>
-                                    <input type="text" id="rmIdUsed" class="form-control" placeholder="เช่น RM-001" required>
+                                    <label class="form-label">ประเภทการรับเข้า</label>
+                                    <select id="rcvType" class="form-select" required>
+                                        <option value="Component Part ใหม่">Component Part ใหม่</option>
+                                        <option value="งานชุบกลับมา">งานชุบกลับมา</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">หมายเลขชิ้นงาน</label>
+                                    <select id="rcvRmId" class="form-select rmSelect" required><option value="">-- เลือกชิ้นงาน --</option></select>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label">ชั่วโมงทำงาน</label>
-                                    <input type="number" step="0.5" id="workHours" class="form-control" value="8" required>
+                                    <label class="form-label">จำนวนที่รับเข้า</label>
+                                    <input type="number" id="rcvQty" class="form-control" min="1" required>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label text-success fw-bold">งาน OK (เข้า FG)</label>
-                                    <input type="number" id="qtyOk" class="form-control" value="0" min="0" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label text-danger fw-bold">งาน NG (ของเสีย)</label>
-                                    <input type="number" id="qtyNg" class="form-control" value="0" min="0" required>
+                                <div class="col-md-1">
+                                    <label class="form-label">ผู้บันทึก</label>
+                                    <input type="text" id="rcvOperator" class="form-control" required>
                                 </div>
                                 <div class="col-12 text-end">
-                                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check-double me-1"></i>บันทึกการผลิต (เข้า FG + ตัด RM)</button>
+                                    <button type="submit" class="btn btn-success fw-bold"><i class="fa-solid fa-plus me-1"></i>บันทึกรับเข้า (ปรับสถานะ: พร้อมใช้งาน)</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="panel-assembly">
+                        <form onsubmit="handleAssembly(event)">
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label">Log No.</label>
+                                    <input type="text" id="asyLogNo" class="form-control" placeholder="เช่น ASY-001" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-primary">Lot No. Prod.</label>
+                                    <input type="text" id="asyLotNo" class="form-control" placeholder="เช่น LOT-20260801" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-success">รายการ FG ที่ประกอบ</label>
+                                    <select id="asyFgId" class="form-select" required><option value="">-- เลือกรายการ FG --</option></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-success fw-bold">จำนวน OK (เข้า FG)</label>
+                                    <input type="number" id="asyQtyOk" class="form-control" min="0" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-danger fw-bold">จำนวน NG (ของเสีย)</label>
+                                    <input type="number" id="asyQtyNg" class="form-control" min="0" value="0" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">พนักงานผู้ประกอบ</label>
+                                    <input type="text" id="asyOperator" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 text-end align-self-end">
+                                    <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="fa-solid fa-cogs me-1"></i>บันทึกประกอบ (เข้า FG & ตัด BOM Component)</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="panel-delivery">
+                        <form onsubmit="handleDelivery(event)">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Lot No.</label>
+                                    <input type="text" id="delLotNo" class="form-control" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">ลูกค้า</label>
+                                    <select id="delCustomer" class="form-select" required>
+                                        <option value="THAI HONDA">STOCK FG THAI HONDA</option>
+                                        <option value="ASIAN HONDA">STOCK FG ASIAN HONDA</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">เลือกรายการ FG</label>
+                                    <select id="delFgId" class="form-select fgSelect" required><option value="">-- เลือก FG --</option></select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">จำนวนที่ส่งมอบ</label>
+                                    <input type="number" id="delQty" class="form-control" min="1" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">ผลตรวจ QA Final</label>
+                                    <select id="delQaStatus" class="form-select" required>
+                                        <option value="PASS (OK)">PASS (OK)</option>
+                                        <option value="REJECT">REJECT</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">หมายเหตุ</label>
+                                    <input type="text" id="delNote" class="form-control" placeholder="เช่น ทะเบียนรถ / เลขที่เอกสาร">
+                                </div>
+                                <div class="col-md-3 text-end align-self-end">
+                                    <button type="submit" class="btn btn-danger w-100 fw-bold"><i class="fa-solid fa-truck me-1"></i>ส่งลูกค้า (ตัดออกจาก Stock FG)</button>
                                 </div>
                             </div>
                         </form>
@@ -194,104 +216,106 @@ HTML
 
         <div class="row g-3">
             <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-boxes-stacked me-2"></i>สต็อกวัตถุดิบ & ชิ้นส่วน (Stock RM)</div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>รหัส</th><th>ชื่อรายการ</th><th>คงเหลือ</th><th>สถานะ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tableRm"><tr><td colspan="4" class="text-center">กำลังโหลดข้อมูล...</td></tr></tbody>
-                            </table>
-                        </div>
+                <div class="card card-custom p-3">
+                    <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-list me-2"></i>สต็อก & สถานะ Component Part</h6>
+                    <div class="table-responsive" style="max-height: 420px;">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr><th>หมายเลขชิ้นงาน</th><th>คงเหลือ</th><th>สถานะปัจจุบัน</th></tr>
+                            </thead>
+                            <tbody id="tblRm"><tr><td colspan="3" class="text-center text-muted">กำลังโหลด...</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white fw-bold"><i class="fa-solid fa-box-open me-2"></i>สต็อกสินค้าสำเร็จรูป (Stock FG)</div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>รหัส FG</th><th>ชื่อสินค้า</th><th>คงเหลือ</th><th>สถานะ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tableFg"><tr><td colspan="4" class="text-center">กำลังโหลดข้อมูล...</td></tr></tbody>
-                            </table>
-                        </div>
+                <div class="card card-custom p-3">
+                    <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-boxes-stacked me-2"></i>สต็อก & สถานะสินค้าสำเร็จรูป (FG)</h6>
+                    <div class="table-responsive" style="max-height: 420px;">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr><th>รหัส FG</th><th>ลูกค้า</th><th>คงเหลือ</th><th>สถานะสินค้า</th></tr>
+                            </thead>
+                            <tbody id="tblFg"><tr><td colspan="4" class="text-center text-muted">กำลังโหลด...</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycby7BAoWikTd2neDsVeskpz-nZUWCrknDUdNfOJrLheoZbH_YexAj0gYTs1LoJHoxh1xHQ/exec";
 
-        document.addEventListener("DOMContentLoaded", () => {
-            fetchData();
-            setDefaultDateTime();
-        });
-
-        function setDefaultDateTime() {
-            const now = new Date();
-            const today = now.toISOString().split('T')[0];
-            const time = now.toTimeString().split(' ')[0].substring(0, 5);
-
-            ['receiveDate', 'platingDate', 'assemblyDate'].forEach(id => {
-                if (document.getElementById(id)) document.getElementById(id).value = today;
-            });
-            ['receiveTime', 'platingTime', 'assemblyTime'].forEach(id => {
-                if (document.getElementById(id)) document.getElementById(id).value = time;
-            });
-        }
+        document.addEventListener("DOMContentLoaded", fetchData);
 
         async function fetchData() {
             try {
                 const res = await fetch(API_URL);
                 const data = await res.json();
-                document.getElementById("statRm").innerText = (data.totalRm || 0) + " ชิ้น";
-                document.getElementById("statPlating").innerText = (data.totalPlating || 0) + " ชิ้น";
-                document.getElementById("statFg").innerText = (data.totalFg || 0) + " ชิ้น";
-                document.getElementById("statDefect").innerText = (data.defectRate || 0) + " %";
+                
+                document.getElementById("statRm").innerText = (data.totalRm || 0).toLocaleString() + " ชิ้น";
+                document.getElementById("statFg").innerText = (data.totalFg || 0).toLocaleString() + " ชิ้น";
 
-                renderTable("tableRm", data.rmList, ["id", "name", "qty"], "min");
-                renderTable("tableFg", data.fgList, ["id", "name", "qty"]);
+                renderRmTable(data.rmList);
+                renderFgTable(data.fgList);
+                populateDropdowns(data.rmList, data.fgList);
             } catch (err) {
-                console.error("Error fetching data:", err);
+                console.error("Fetch Error:", err);
             }
         }
 
-        function renderTable(elementId, list, keys, minKey) {
-            const tbody = document.getElementById(elementId);
+        function getStatusBadge(status) {
+            if (status.includes("อยู่ระหว่างชุบ")) return `<span class="badge bg-warning text-dark badge-status"><i class="fa-solid fa-fire me-1"></i>${status}</span>`;
+            if (status.includes("พร้อมใช้งาน") || status.includes("ชุบเสร็จสิ้น")) return `<span class="badge bg-success badge-status"><i class="fa-solid fa-check me-1"></i>${status}</span>`;
+            if (status.includes("นำเข้าไลน์ประกอบ")) return `<span class="badge bg-info text-dark badge-status"><i class="fa-solid fa-gears me-1"></i>${status}</span>`;
+            if (status.includes("FG พร้อมส่ง") || status.includes("In Stock")) return `<span class="badge bg-success badge-status"><i class="fa-solid fa-box me-1"></i>${status}</span>`;
+            if (status.includes("จัดส่งสำเร็จ")) return `<span class="badge bg-secondary badge-status"><i class="fa-solid fa-truck me-1"></i>${status}</span>`;
+            if (status.includes("REJECT")) return `<span class="badge bg-danger badge-status"><i class="fa-solid fa-xmark me-1"></i>${status}</span>`;
+            return `<span class="badge bg-light text-dark badge-status">${status}</span>`;
+        }
+
+        function renderRmTable(list) {
+            const tbody = document.getElementById("tblRm");
             tbody.innerHTML = "";
-            if (!list || list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">ไม่มีข้อมูล</td></tr>`;
-                return;
-            }
+            if(!list || list.length === 0) { tbody.innerHTML = `<tr><td colspan="3" class="text-center">ไม่มีข้อมูล</td></tr>`; return; }
             list.forEach(item => {
-                let statusBadge = '<span class="badge bg-success">ปกติ</span>';
-                if (minKey && item[keys[2]] <= item[minKey]) {
-                    statusBadge = '<span class="badge bg-danger">สต็อกต่ำ</span>';
-                }
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${item[keys[0]]}</strong></td>
-                        <td>${item[keys[1]]}</td>
-                        <td>${item[keys[2]]}</td>
-                        <td>${statusBadge}</td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr>
+                    <td><code>${item.id}</code><br><small class="text-muted">${item.name}</small></td>
+                    <td class="fw-bold">${item.qty.toLocaleString()}</td>
+                    <td>${getStatusBadge(item.status)}</td>
+                </tr>`;
             });
         }
 
-        async function sendData(payload) {
+        function renderFgTable(list) {
+            const tbody = document.getElementById("tblFg");
+            tbody.innerHTML = "";
+            if(!list || list.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="text-center">ไม่มีข้อมูล</td></tr>`; return; }
+            list.forEach(item => {
+                tbody.innerHTML += `<tr>
+                    <td><code>${item.id}</code></td>
+                    <td>${item.customer || '-'}</td>
+                    <td class="fw-bold text-success">${item.qty.toLocaleString()}</td>
+                    <td>${getStatusBadge(item.status)}</td>
+                </tr>`;
+            });
+        }
+
+        function populateDropdowns(rmList, fgList) {
+            document.querySelectorAll(".rmSelect").forEach(sel => {
+                sel.innerHTML = '<option value="">-- เลือกชิ้นงาน --</option>';
+                rmList.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.id} - ${i.name}</option>`);
+            });
+            document.querySelectorAll("#asyFgId, .fgSelect").forEach(sel => {
+                sel.innerHTML = '<option value="">-- เลือกรายการ FG --</option>';
+                fgList.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.id} (${i.customer})</option>`);
+            });
+        }
+
+        async function sendPayload(payload) {
             try {
                 await fetch(API_URL, {
                     method: "POST",
@@ -299,55 +323,66 @@ HTML
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-                alert("บันทึกข้อมูลเรียบร้อยแล้ว!");
+                alert("บันทึกข้อมูลและอัปเดตสถานะเรียบร้อยแล้ว!");
                 fetchData();
             } catch (err) {
                 alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
             }
         }
 
-        function handleReceive(e) {
+        function handleSendPlating(e) {
             e.preventDefault();
-            sendData({
-                action: "receiveStock",
-                date: document.getElementById("receiveDate").value,
-                time: document.getElementById("receiveTime").value,
-                type: document.getElementById("receiveType").value,
-                id: document.getElementById("receiveRmId").value,
-                qty: document.getElementById("receiveQty").value
+            sendPayload({
+                action: "sendPlating",
+                docNo: document.getElementById("pltDocNo").value,
+                rmId: document.getElementById("pltRmId").value,
+                qty: document.getElementById("pltQty").value,
+                vendor: document.getElementById("pltVendor").value,
+                operator: document.getElementById("pltOperator").value
             });
             e.target.reset();
-            setDefaultDateTime();
         }
 
-        function handlePlating(e) {
+        function handleReceive(e) {
             e.preventDefault();
-            sendData({
-                action: "sendPlating",
-                date: document.getElementById("platingDate").value,
-                time: document.getElementById("platingTime").value,
-                id: document.getElementById("platingId").value,
-                qty: document.getElementById("platingQty").value,
-                vendor: document.getElementById("platingVendor").value
+            sendPayload({
+                action: "receiveStock",
+                logNo: document.getElementById("rcvLogNo").value,
+                billNo: document.getElementById("rcvBillNo").value,
+                receiveType: document.getElementById("rcvType").value,
+                rmId: document.getElementById("rcvRmId").value,
+                qty: document.getElementById("rcvQty").value,
+                operator: document.getElementById("rcvOperator").value
             });
             e.target.reset();
-            setDefaultDateTime();
         }
 
         function handleAssembly(e) {
             e.preventDefault();
-            sendData({
-                action: "recordProduction",
-                date: document.getElementById("assemblyDate").value,
-                time: document.getElementById("assemblyTime").value,
-                fgId: document.getElementById("fgId").value,
-                rmId: document.getElementById("rmIdUsed").value,
-                qtyOk: document.getElementById("qtyOk").value,
-                qtyNg: document.getElementById("qtyNg").value,
-                workHours: document.getElementById("workHours").value
+            sendPayload({
+                action: "recordAssembly",
+                logNo: document.getElementById("asyLogNo").value,
+                lotNo: document.getElementById("asyLotNo").value,
+                fgId: document.getElementById("asyFgId").value,
+                qtyOk: document.getElementById("asyQtyOk").value,
+                qtyNg: document.getElementById("asyQtyNg").value,
+                operator: document.getElementById("asyOperator").value
             });
             e.target.reset();
-            setDefaultDateTime();
+        }
+
+        function handleDelivery(e) {
+            e.preventDefault();
+            sendPayload({
+                action: "recordDelivery",
+                lotNo: document.getElementById("delLotNo").value,
+                customer: document.getElementById("delCustomer").value,
+                fgId: document.getElementById("delFgId").value,
+                qty: document.getElementById("delQty").value,
+                qaStatus: document.getElementById("delQaStatus").value,
+                note: document.getElementById("delNote").value
+            });
+            e.target.reset();
         }
     </script>
 </body>
