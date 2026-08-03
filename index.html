@@ -2,388 +2,321 @@ HTML
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบควบคุมการผลิต & สถานะสต็อกสินค้า</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card-custom { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .badge-status { font-size: 0.8rem; padding: 6px 10px; border-radius: 20px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบริหารจัดการสต็อกชิ้นส่วนและสินค้า (Production & Stock Management)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #f4f6f9; font-family: 'Sarabun', sans-serif; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .card-header { border-radius: 12px 12px 0 0 !important; font-weight: bold; }
+    .stat-card { border-left: 5px solid; }
+    .stat-rm { border-left-color: #0d6efd; }
+    .stat-fg { border-left-color: #198754; }
+    .badge-status { font-size: 0.85rem; padding: 6px 12px; border-radius: 20px; }
+  </style>
 </head>
-<body class="p-3 p-md-4">
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
     <div class="container-fluid">
-        
-        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-3 shadow-sm">
+      <a class="navbar-brand" href="#"><i class="fa-solid fa-boxes-stacked me-2"></i>ระบบจัดการสต็อก & กระบวนการผลิต</a>
+      <button class="btn btn-outline-light btn-sm" onclick="loadData()"><i class="fa-solid fa-rotate me-1"></i> อัปเดตข้อมูล</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="card stat-card stat-rm p-3">
+          <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h4 class="fw-bold text-primary mb-1"><i class="fa-solid fa-industry me-2"></i>ระบบติดตามสถานะการผลิต & BOM Stock</h4>
-                <small class="text-muted">ติดตามสถานะ: ส่งชุบ ➔ รับเข้า ➔ ประกอบ/QC (ตัด BOM) ➔ คลัง FG ➔ QA & Delivery</small>
+              <h6 class="text-muted mb-1">ยอดรวมสต็อกชิ้นส่วน (Component Parts)</h6>
+              <h3 class="mb-0 fw-bold text-primary" id="totalRmCount">0 ชิ้น</h3>
             </div>
-            <button onclick="fetchData()" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-sync me-1"></i>อัปเดตข้อมูล</button>
+            <i class="fa-solid fa-gears fa-2x text-primary opacity-50"></i>
+          </div>
         </div>
-
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div class="card card-custom bg-primary text-white p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <small class="opacity-75">รวมคลังชิ้นส่วน (Component Stock)</small>
-                            <h2 class="fw-bold mb-0" id="statRm">0 ชิ้น</h2>
-                        </div>
-                        <i class="fa-solid fa-cubes fa-2x opacity-50"></i>
-                    </div>
-                </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card stat-card stat-fg p-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="text-muted mb-1">ยอดรวมสต็อกสินค้าสำเร็จรูป (FG)</h6>
+              <h3 class="mb-0 fw-bold text-success" id="totalFgCount">0 ชิ้น</h3>
             </div>
-            <div class="col-md-6">
-                <div class="card card-custom bg-success text-white p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <small class="opacity-75">รวมคลังสินค้าสำเร็จรูป (FG Stock)</small>
-                            <h2 class="fw-bold mb-0" id="statFg">0 ชิ้น</h2>
-                        </div>
-                        <i class="fa-solid fa-box-check fa-2x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
+            <i class="fa-solid fa-box-complete fa-2x text-success opacity-50"></i>
+          </div>
         </div>
-
-        <div class="card card-custom mb-4">
-            <div class="card-header bg-white pt-3">
-                <ul class="nav nav-pills card-header-pills" id="processTab" role="tablist">
-                    <li class="nav-item">
-                        <button class="nav-link active fw-bold" id="tab-plating" data-bs-toggle="tab" data-bs-target="#panel-plating" type="button"><i class="fa-solid fa-truck-arrow-right me-1"></i>1. บันทึกส่งชุบ</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link fw-bold" id="tab-receive" data-bs-toggle="tab" data-bs-target="#panel-receive" type="button"><i class="fa-solid fa-file-invoice-dollar me-1"></i>2. รับเข้า Component</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link fw-bold" id="tab-assembly" data-bs-toggle="tab" data-bs-target="#panel-assembly" type="button"><i class="fa-solid fa-gears me-1"></i>3. ประกอบ/QC (ตัด BOM)</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link fw-bold" id="tab-delivery" data-bs-toggle="tab" data-bs-target="#panel-delivery" type="button"><i class="fa-solid fa-paper-plane me-1"></i>4. QA Final & Delivery</button>
-                    </li>
-                </ul>
-            </div>
-            <div class="card-body">
-                <div class="tab-content">
-                    
-                    <div class="tab-pane fade show active" id="panel-plating">
-                        <form onsubmit="handleSendPlating(event)">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">หมายเลขใบส่งชุบ</label>
-                                    <input type="text" id="pltDocNo" class="form-control" placeholder="เช่น PLT-2026-001" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">หมายเลขชิ้นงาน (Component)</label>
-                                    <select id="pltRmId" class="form-select rmSelect" required><option value="">-- เลือกชิ้นงาน --</option></select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">จำนวนที่ส่งชุบ</label>
-                                    <input type="number" id="pltQty" class="form-control" min="1" required>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">โรงชุบ / ผู้ผลิต</label>
-                                    <input type="text" id="pltVendor" class="form-control" required>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">ผู้บันทึก</label>
-                                    <input type="text" id="pltOperator" class="form-control" required>
-                                </div>
-                                <div class="col-12 text-end">
-                                    <button type="submit" class="btn btn-warning text-dark fw-bold"><i class="fa-solid fa-paper-plane me-1"></i>บันทึกส่งชุบ (ปรับสถานะ: อยู่ระหว่างชุบ)</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="tab-pane fade" id="panel-receive">
-                        <form onsubmit="handleReceive(event)">
-                            <div class="row g-3">
-                                <div class="col-md-2">
-                                    <label class="form-label">Log No.</label>
-                                    <input type="text" id="rcvLogNo" class="form-control" placeholder="เช่น RC-001" required>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">บิลเลขที่</label>
-                                    <input type="text" id="rcvBillNo" class="form-control" placeholder="เช่น INV-8899" required>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">ประเภทการรับเข้า</label>
-                                    <select id="rcvType" class="form-select" required>
-                                        <option value="Component Part ใหม่">Component Part ใหม่</option>
-                                        <option value="งานชุบกลับมา">งานชุบกลับมา</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">หมายเลขชิ้นงาน</label>
-                                    <select id="rcvRmId" class="form-select rmSelect" required><option value="">-- เลือกชิ้นงาน --</option></select>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">จำนวนที่รับเข้า</label>
-                                    <input type="number" id="rcvQty" class="form-control" min="1" required>
-                                </div>
-                                <div class="col-md-1">
-                                    <label class="form-label">ผู้บันทึก</label>
-                                    <input type="text" id="rcvOperator" class="form-control" required>
-                                </div>
-                                <div class="col-12 text-end">
-                                    <button type="submit" class="btn btn-success fw-bold"><i class="fa-solid fa-plus me-1"></i>บันทึกรับเข้า (ปรับสถานะ: พร้อมใช้งาน)</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="tab-pane fade" id="panel-assembly">
-                        <form onsubmit="handleAssembly(event)">
-                            <div class="row g-3">
-                                <div class="col-md-2">
-                                    <label class="form-label">Log No.</label>
-                                    <input type="text" id="asyLogNo" class="form-control" placeholder="เช่น ASY-001" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold text-primary">Lot No. Prod.</label>
-                                    <input type="text" id="asyLotNo" class="form-control" placeholder="เช่น LOT-20260801" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold text-success">รายการ FG ที่ประกอบ</label>
-                                    <select id="asyFgId" class="form-select" required><option value="">-- เลือกรายการ FG --</option></select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label text-success fw-bold">จำนวน OK (เข้า FG)</label>
-                                    <input type="number" id="asyQtyOk" class="form-control" min="0" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label text-danger fw-bold">จำนวน NG (ของเสีย)</label>
-                                    <input type="number" id="asyQtyNg" class="form-control" min="0" value="0" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">พนักงานผู้ประกอบ</label>
-                                    <input type="text" id="asyOperator" class="form-control" required>
-                                </div>
-                                <div class="col-md-6 text-end align-self-end">
-                                    <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="fa-solid fa-cogs me-1"></i>บันทึกประกอบ (เข้า FG & ตัด BOM Component)</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="tab-pane fade" id="panel-delivery">
-                        <form onsubmit="handleDelivery(event)">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Lot No.</label>
-                                    <input type="text" id="delLotNo" class="form-control" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">ลูกค้า</label>
-                                    <select id="delCustomer" class="form-select" required>
-                                        <option value="THAI HONDA">STOCK FG THAI HONDA</option>
-                                        <option value="ASIAN HONDA">STOCK FG ASIAN HONDA</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">เลือกรายการ FG</label>
-                                    <select id="delFgId" class="form-select fgSelect" required><option value="">-- เลือก FG --</option></select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">จำนวนที่ส่งมอบ</label>
-                                    <input type="number" id="delQty" class="form-control" min="1" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">ผลตรวจ QA Final</label>
-                                    <select id="delQaStatus" class="form-select" required>
-                                        <option value="PASS (OK)">PASS (OK)</option>
-                                        <option value="REJECT">REJECT</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">หมายเหตุ</label>
-                                    <input type="text" id="delNote" class="form-control" placeholder="เช่น ทะเบียนรถ / เลขที่เอกสาร">
-                                </div>
-                                <div class="col-md-3 text-end align-self-end">
-                                    <button type="submit" class="btn btn-danger w-100 fw-bold"><i class="fa-solid fa-truck me-1"></i>ส่งลูกค้า (ตัดออกจาก Stock FG)</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="card card-custom p-3">
-                    <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-list me-2"></i>สต็อก & สถานะ Component Part</h6>
-                    <div class="table-responsive" style="max-height: 420px;">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light sticky-top">
-                                <tr><th>หมายเลขชิ้นงาน</th><th>คงเหลือ</th><th>สถานะปัจจุบัน</th></tr>
-                            </thead>
-                            <tbody id="tblRm"><tr><td colspan="3" class="text-center text-muted">กำลังโหลด...</td></tr></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card card-custom p-3">
-                    <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-boxes-stacked me-2"></i>สต็อก & สถานะสินค้าสำเร็จรูป (FG)</h6>
-                    <div class="table-responsive" style="max-height: 420px;">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light sticky-top">
-                                <tr><th>รหัส FG</th><th>ลูกค้า</th><th>คงเหลือ</th><th>สถานะสินค้า</th></tr>
-                            </thead>
-                            <tbody id="tblFg"><tr><td colspan="4" class="text-center text-muted">กำลังโหลด...</td></tr></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+      </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycby7BAoWikTd2neDsVeskpz-nZUWCrknDUdNfOJrLheoZbH_YexAj0gYTs1LoJHoxh1xHQ/exec";
+    <ul class="nav nav-pills mb-4" id="mainTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="plating-tab" data-bs-toggle="pill" data-bs-target="#plating" type="button"><i class="fa-solid fa-truck-arrow-right me-1"></i> 1. บันทึกส่งชุบ</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="receive-tab" data-bs-toggle="pill" data-bs-target="#receive" type="button"><i class="fa-solid fa-dolly me-1"></i> 2. บันทึกรับเข้า Stock Component</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="assembly-tab" data-bs-toggle="pill" data-bs-target="#assembly" type="button"><i class="fa-solid fa-screwdriver-wrench me-1"></i> 3. บันทึกการประกอบ (Ass'y/QC)</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="delivery-tab" data-bs-toggle="pill" data-bs-target="#delivery" type="button"><i class="fa-solid fa-truck-fast me-1"></i> 4. QA Final & Delivery</button>
+      </li>
+    </ul>
 
-        document.addEventListener("DOMContentLoaded", fetchData);
+    <div class="tab-content" id="mainTabContent">
 
-        async function fetchData() {
-            try {
-                const res = await fetch(API_URL);
-                const data = await res.json();
-                
-                document.getElementById("statRm").innerText = (data.totalRm || 0).toLocaleString() + " ชิ้น";
-                document.getElementById("statFg").innerText = (data.totalFg || 0).toLocaleString() + " ชิ้น";
+      <div class="tab-pane fade show active" id="plating" role="tabpanel">
+        <div class="card">
+          <div class="card-header bg-primary text-white"><i class="fa-solid fa-paper-plane me-2"></i>แบบฟอร์มส่งงานไปชุบภายนอก</div>
+          <div class="card-body">
+            <form id="formPlating" onsubmit="handleFormSubmit(event, 'sendPlating')">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">หมายเลขใบส่งชุบ / Doc No.</label>
+                  <input type="text" class="form-required form-control" name="docNo" placeholder="ระบุเลขที่เอกสาร" required>
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label">เลือกชิ้นงาน (Component Part)</label>
+                  <select class="form-select rm-select" name="rmId" required><option value="">-- กำลังโหลดรายการชิ้นงาน... --</option></select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">จำนวนที่ส่งชุบ</label>
+                  <input type="number" class="form-control" name="qty" min="1" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ชื่อโรงชุบ / Subcontractor</label>
+                  <input type="text" class="form-control" name="vendor" placeholder="เช่น บริษัท ชุบผิว จำกัด" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ผู้บันทึกข้อมูล</label>
+                  <input type="text" class="form-control" name="operator" placeholder="ชื่อพนักงาน" required>
+                </div>
+                <div class="col-12 text-end">
+                  <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save me-1"></i> บันทึกรายการส่งชุบ</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
-                renderRmTable(data.rmList);
-                renderFgTable(data.fgList);
-                populateDropdowns(data.rmList, data.fgList);
-            } catch (err) {
-                console.error("Fetch Error:", err);
-            }
+      <div class="tab-pane fade" id="receive" role="tabpanel">
+        <div class="card">
+          <div class="card-header bg-success text-white"><i class="fa-solid fa-file-invoice me-2"></i>บันทึกรับเข้า Component (งานชุบกลับมา / ชิ้นส่วนใหม่)</div>
+          <div class="card-body">
+            <form id="formReceive" onsubmit="handleFormSubmit(event, 'receiveStock')">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Log No.</label>
+                  <input type="text" class="form-control" name="logNo" placeholder="ระบุ Log No." required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">บิลเลขที่ / Delivery Note</label>
+                  <input type="text" class="form-control" name="billNo" placeholder="เลขที่บิล/ใบรับของ" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ประเภทการรับเข้า</label>
+                  <select class="form-select" name="receiveType" required>
+                    <option value="งานชุบกลับมา">งานชุบกลับมา (รับจากโรงชุบ)</option>
+                    <option value="รับชิ้นส่วนใหม่">รับชิ้นส่วนใหม่ (In-house/Supplier)</option>
+                  </select>
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label">เลือกชิ้นงาน (Component Part)</label>
+                  <select class="form-select rm-select" name="rmId" required><option value="">-- กำลังโหลดรายการชิ้นงาน... --</option></select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">จำนวนที่รับเข้า</label>
+                  <input type="number" class="form-control" name="qty" min="1" required>
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label">ผู้รับสินค้า / ผู้บันทึก</label>
+                  <input type="text" class="form-control" name="operator" placeholder="ชื่อพนักงาน" required>
+                </div>
+                <div class="col-12 text-end">
+                  <button type="submit" class="btn btn-success"><i class="fa-solid fa-save me-1"></i> บันทึกการรับเข้าสต็อก</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="assembly" role="tabpanel">
+        <div class="card">
+          <div class="card-header bg-warning text-dark"><i class="fa-solid fa-industry me-2"></i>บันทึกผลการประกอบสินค้า (Ass'y & QC Inprocess)</div>
+          <div class="card-body">
+            <form id="formAssembly" onsubmit="handleFormSubmit(event, 'recordAssembly')">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Log No.</label>
+                  <input type="text" class="form-control" name="logNo" placeholder="ระบุ Log No." required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Lot No. Prod.</label>
+                  <input type="text" class="form-control" name="lotNo" placeholder="เช่น LOT-2026-08A" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">เลือกสินค้าสำเร็จรูป (FG Item)</label>
+                  <select class="form-select fg-select" name="fgId" required><option value="">-- กำลังโหลดรายการ FG... --</option></select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">จำนวนที่ประกอบผ่าน (OK)</label>
+                  <input type="number" class="form-control text-success fw-bold" name="qtyOk" min="0" value="0" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">จำนวนเสีย/ของเสีย (NG)</label>
+                  <input type="number" class="form-control text-danger fw-bold" name="qtyNg" min="0" value="0" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">พนักงานประกอบ / Inspector</label>
+                  <input type="text" class="form-control" name="operator" placeholder="ชื่อพนักงาน" required>
+                </div>
+                <div class="col-12 text-end">
+                  <button type="submit" class="btn btn-warning"><i class="fa-solid fa-save me-1"></i> บันทึกงานประกอบ & ตัดสต็อก BOM</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="delivery" role="tabpanel">
+        <div class="card">
+          <div class="card-header bg-info text-white"><i class="fa-solid fa-truck-loading me-2"></i>บันทึกการตรวจ QA Final และส่งมอบสินค้า</div>
+          <div class="card-body">
+            <form id="formDelivery" onsubmit="handleFormSubmit(event, 'recordDelivery')">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Lot No.</label>
+                  <input type="text" class="form-control" name="lotNo" placeholder="ระบุ Lot สินค้า" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ชื่อลูกค้า</label>
+                  <select class="form-select" name="customer" required>
+                    <option value="THAI HONDA">THAI HONDA</option>
+                    <option value="ASIAN HONDA">ASIAN HONDA</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">เลือกสินค้าสำเร็จรูป (FG Item)</label>
+                  <select class="form-select fg-select" name="fgId" required><option value="">-- กำลังโหลดรายการ FG... --</option></select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">จำนวนที่จัดส่ง</label>
+                  <input type="number" class="form-control" name="qty" min="1" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">ผลการตรวจ QA Final</label>
+                  <select class="form-select" name="qaStatus" required>
+                    <option value="PASS (OK)">PASS (ผ่านการตรวจ)</option>
+                    <option value="REJECT (NG)">REJECT (ไม่อนุญาตให้ส่ง)</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">หมายเหตุเพิ่มเติม</label>
+                  <input type="text" class="form-control" name="note" placeholder="ข้อความเพิ่มเติม (ถ้ามี)">
+                </div>
+                <div class="col-12 text-end">
+                  <button type="submit" class="btn btn-info text-white"><i class="fa-solid fa-paper-plane me-1"></i> บันทึกการส่งมอบสินค้า</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ⚠️ นำ URL ของ Web App จาก Google Apps Script มาวางในอัญประกาศคู่ด้านล่างนี้
+    const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID_HERE/exec";
+
+    let globalData = { rmList: [], fgList: [] };
+
+    document.addEventListener("DOMContentLoaded", function() {
+      loadData();
+    });
+
+    function loadData() {
+      if(SCRIPT_URL.includes("YOUR_DEPLOYMENT_ID_HERE")) {
+        alert("กรุณาใส่ Web App URL จาก Google Apps Script ในไฟล์ index.html ก่อนนะครับ");
+        return;
+      }
+
+      fetch(SCRIPT_URL)
+        .then(response => response.json())
+        .then(data => {
+          globalData = data;
+          document.getElementById('totalRmCount').innerText = data.totalRm.toLocaleString() + " ชิ้น";
+          document.getElementById('totalFgCount').innerText = data.totalFg.toLocaleString() + " ชิ้น";
+          populateDropdowns();
+        })
+        .catch(err => console.error("Error loading data:", err));
+    }
+
+    function populateDropdowns() {
+      const rmSelects = document.querySelectorAll('.rm-select');
+      const fgSelects = document.querySelectorAll('.fg-select');
+
+      rmSelects.forEach(select => {
+        select.innerHTML = '<option value="">-- เลือกรายการชิ้นส่วน Component --</option>';
+        globalData.rmList.forEach(item => {
+          select.innerHTML += `<option value="${item.id}">${item.id} - ${item.name} (คงเหลือ: ${item.qty})</option>`;
+        });
+      });
+
+      fgSelects.forEach(select => {
+        select.innerHTML = '<option value="">-- เลือกรายการสินค้า FG --</option>';
+        globalData.fgList.forEach(item => {
+          select.innerHTML += `<option value="${item.id}">${item.id} - ${item.name} [${item.customer}] (คงเหลือ: ${item.qty})</option>`;
+        });
+      });
+    }
+
+    function handleFormSubmit(e, actionType) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+      const dataObj = { action: actionType };
+
+      formData.forEach((value, key) => { dataObj[key] = value; });
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> กำลังบันทึกข้อมูล...';
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(dataObj)
+      })
+      .then(res => res.json())
+      .then(res => {
+        if(res.status === "success") {
+          alert("บันทึกข้อมูลสำเร็จเรียบร้อยครับ!");
+          form.reset();
+          loadData();
+        } else {
+          alert("เกิดข้อผิดพลาด: " + res.message);
         }
-
-        function getStatusBadge(status) {
-            if (status.includes("อยู่ระหว่างชุบ")) return `<span class="badge bg-warning text-dark badge-status"><i class="fa-solid fa-fire me-1"></i>${status}</span>`;
-            if (status.includes("พร้อมใช้งาน") || status.includes("ชุบเสร็จสิ้น")) return `<span class="badge bg-success badge-status"><i class="fa-solid fa-check me-1"></i>${status}</span>`;
-            if (status.includes("นำเข้าไลน์ประกอบ")) return `<span class="badge bg-info text-dark badge-status"><i class="fa-solid fa-gears me-1"></i>${status}</span>`;
-            if (status.includes("FG พร้อมส่ง") || status.includes("In Stock")) return `<span class="badge bg-success badge-status"><i class="fa-solid fa-box me-1"></i>${status}</span>`;
-            if (status.includes("จัดส่งสำเร็จ")) return `<span class="badge bg-secondary badge-status"><i class="fa-solid fa-truck me-1"></i>${status}</span>`;
-            if (status.includes("REJECT")) return `<span class="badge bg-danger badge-status"><i class="fa-solid fa-xmark me-1"></i>${status}</span>`;
-            return `<span class="badge bg-light text-dark badge-status">${status}</span>`;
-        }
-
-        function renderRmTable(list) {
-            const tbody = document.getElementById("tblRm");
-            tbody.innerHTML = "";
-            if(!list || list.length === 0) { tbody.innerHTML = `<tr><td colspan="3" class="text-center">ไม่มีข้อมูล</td></tr>`; return; }
-            list.forEach(item => {
-                tbody.innerHTML += `<tr>
-                    <td><code>${item.id}</code><br><small class="text-muted">${item.name}</small></td>
-                    <td class="fw-bold">${item.qty.toLocaleString()}</td>
-                    <td>${getStatusBadge(item.status)}</td>
-                </tr>`;
-            });
-        }
-
-        function renderFgTable(list) {
-            const tbody = document.getElementById("tblFg");
-            tbody.innerHTML = "";
-            if(!list || list.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="text-center">ไม่มีข้อมูล</td></tr>`; return; }
-            list.forEach(item => {
-                tbody.innerHTML += `<tr>
-                    <td><code>${item.id}</code></td>
-                    <td>${item.customer || '-'}</td>
-                    <td class="fw-bold text-success">${item.qty.toLocaleString()}</td>
-                    <td>${getStatusBadge(item.status)}</td>
-                </tr>`;
-            });
-        }
-
-        function populateDropdowns(rmList, fgList) {
-            document.querySelectorAll(".rmSelect").forEach(sel => {
-                sel.innerHTML = '<option value="">-- เลือกชิ้นงาน --</option>';
-                rmList.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.id} - ${i.name}</option>`);
-            });
-            document.querySelectorAll("#asyFgId, .fgSelect").forEach(sel => {
-                sel.innerHTML = '<option value="">-- เลือกรายการ FG --</option>';
-                fgList.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.id} (${i.customer})</option>`);
-            });
-        }
-
-        async function sendPayload(payload) {
-            try {
-                await fetch(API_URL, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                alert("บันทึกข้อมูลและอัปเดตสถานะเรียบร้อยแล้ว!");
-                fetchData();
-            } catch (err) {
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-            }
-        }
-
-        function handleSendPlating(e) {
-            e.preventDefault();
-            sendPayload({
-                action: "sendPlating",
-                docNo: document.getElementById("pltDocNo").value,
-                rmId: document.getElementById("pltRmId").value,
-                qty: document.getElementById("pltQty").value,
-                vendor: document.getElementById("pltVendor").value,
-                operator: document.getElementById("pltOperator").value
-            });
-            e.target.reset();
-        }
-
-        function handleReceive(e) {
-            e.preventDefault();
-            sendPayload({
-                action: "receiveStock",
-                logNo: document.getElementById("rcvLogNo").value,
-                billNo: document.getElementById("rcvBillNo").value,
-                receiveType: document.getElementById("rcvType").value,
-                rmId: document.getElementById("rcvRmId").value,
-                qty: document.getElementById("rcvQty").value,
-                operator: document.getElementById("rcvOperator").value
-            });
-            e.target.reset();
-        }
-
-        function handleAssembly(e) {
-            e.preventDefault();
-            sendPayload({
-                action: "recordAssembly",
-                logNo: document.getElementById("asyLogNo").value,
-                lotNo: document.getElementById("asyLotNo").value,
-                fgId: document.getElementById("asyFgId").value,
-                qtyOk: document.getElementById("asyQtyOk").value,
-                qtyNg: document.getElementById("asyQtyNg").value,
-                operator: document.getElementById("asyOperator").value
-            });
-            e.target.reset();
-        }
-
-        function handleDelivery(e) {
-            e.preventDefault();
-            sendPayload({
-                action: "recordDelivery",
-                lotNo: document.getElementById("delLotNo").value,
-                customer: document.getElementById("delCustomer").value,
-                fgId: document.getElementById("delFgId").value,
-                qty: document.getElementById("delQty").value,
-                qaStatus: document.getElementById("delQaStatus").value,
-                note: document.getElementById("delNote").value
-            });
-            e.target.reset();
-        }
-    </script>
+      })
+      .catch(err => {
+        alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
+        console.error(err);
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      });
+    }
+  </script>
 </body>
 </html>
