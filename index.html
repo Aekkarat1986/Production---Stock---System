@@ -353,12 +353,63 @@ function alertRes(res) {
       });
     }
 
-    // โหลดข้อมูลอัตโนมัติเมื่อกดคลิกแท็บส่งชุบ
+  // โหลดข้อมูลอัตโนมัติเมื่อกดคลิกแท็บส่งชุบ
     $(document).ready(function(){
       $('#tab-plating').on('click', function(){
         loadPlatingBalance();
       });
     });
-  </script>
-</body>
+
+    // ==========================================
+    // วางฟังก์ชันดึงข้อมูลสต็อกตรงนี้ (ให้อยู่ภายในแท็ก script)
+    // ==========================================
+    function loadStockData() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          var totalRm = 0;
+          var rmHtml = '<div class="table-responsive"><table class="table table-sm table-bordered table-striped"><thead><tr><th>รหัสชิ้นงาน</th><th>ชื่อรายการ</th><th>คงเหลือ</th><th>สถานะ</th></tr></thead><tbody>';
+          
+          if (data.componentParts && data.componentParts.length > 0) {
+            data.componentParts.forEach(function(item) {
+              totalRm += item.qty;
+              rmHtml += '<tr><td><b>' + item.id + '</b></td><td>' + item.name + '</td><td class="text-right font-weight-bold">' + item.qty.toLocaleString() + '</td><td>' + item.status + '</td></tr>';
+            });
+          } else {
+            rmHtml += '<tr><td colspan="4" class="text-center text-muted">ไม่พบข้อมูลสต็อกชิ้นส่วน</td></tr>';
+          }
+          rmHtml += '</tbody></table></div>';
+          
+          document.getElementById("rmTableContainer").innerHTML = rmHtml;
+          document.getElementById("totalRmQty").innerText = totalRm.toLocaleString() + " ชิ้น";
+
+          var totalFg = 0;
+          var fgHtml = '<div class="table-responsive"><table class="table table-sm table-bordered table-striped"><thead><tr><th>รหัส FG</th><th>ชื่อรายการ FG</th><th>ลูกค้า</th><th>คงเหลือ</th></tr></thead><tbody>';
+          
+          if (data.finishedGoods && data.finishedGoods.length > 0) {
+            data.finishedGoods.forEach(function(item) {
+              totalFg += item.qty;
+              fgHtml += '<tr><td><b>' + item.id + '</b></td><td>' + item.name + '</td><td>' + item.customer + '</td><td class="text-right font-weight-bold text-success">' + item.qty.toLocaleString() + '</td></tr>';
+            });
+          } else {
+            fgHtml += '<tr><td colspan="4" class="text-center text-muted">ไม่พบข้อมูลสต็อก FG</td></tr>';
+          }
+          fgHtml += '</tbody></table></div>';
+          
+          document.getElementById("fgTableContainer").innerHTML = fgHtml;
+          document.getElementById("totalFgQty").innerText = totalFg.toLocaleString() + " ชิ้น";
+        })
+        .withFailureHandler(function(err) {
+          console.error("Error loading stock:", err);
+          document.getElementById("rmTableContainer").innerHTML = '<span class="text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</span>';
+          document.getElementById("fgTableContainer").innerHTML = '<span class="text-danger">เกิดข้อผิดพลาดในการโหลดข้อมูล</span>';
+        })
+        .getAllStockData();
+    }
+
+    // สั่งให้โหลดข้อมูลทันทีเมื่อเปิดหน้าเว็บ
+    document.addEventListener("DOMContentLoaded", function() {
+      loadStockData();
+    });
+
+  </script> </body>
 </html>
